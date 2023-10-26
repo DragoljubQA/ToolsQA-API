@@ -1,8 +1,10 @@
 package PojoClasses;
 
+import java.util.ArrayList;
+
 public class BookstorePayload {
     private String userId;
-    private Object collectionOfIsbns;
+    private ArrayList<Object> collectionOfIsbns;
 
     public String getUserId() {
         return userId;
@@ -12,11 +14,11 @@ public class BookstorePayload {
         this.userId = userId;
     }
 
-    public Object getCollectionOfIsbns() {
+    public ArrayList<Object> getCollectionOfIsbns() {
         return collectionOfIsbns;
     }
 
-    public void setCollectionOfIsbns(Object collectionOfIsbns) {
+    public void setCollectionOfIsbns(ArrayList<Object> collectionOfIsbns) {
         this.collectionOfIsbns = collectionOfIsbns;
     }
 }

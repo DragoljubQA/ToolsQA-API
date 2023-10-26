@@ -35,7 +35,7 @@ public class AccountPayload {
 
     public Object accountPayload() {
         AccountPayload payload = new AccountPayload();
-        String username = faker.name().username();
+        String username = "DragoTest " + faker.name().username();
         String password = faker.regexify("([a-z]){2}([A-Z]){2}([0-9]){2}([@$!%*&]){2}([0-9a-zA-Z]){3}?");
         payload.setUserName(username);
         payload.setPassword(password);

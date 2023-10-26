@@ -64,7 +64,7 @@ public class ApiTests {
 
     @AfterClass
     public void tearDown() {
-        //removeUser();
+        removeUser();
     }
 
     public boolean userIsAuthorized() {
@@ -107,26 +107,30 @@ public class ApiTests {
     }
 
     public void removeUser() {
-        String response = given()
-                .log().all()
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + variables.getToken())
-                .delete(accountParam+userParam+"/"+accountPayload.getUserId())
-                .then()
-                .log().all()
-                .statusCode(204)
-                .extract().response().asString();
+        if (accountPayload.getUserId() != null && variables.getToken() != null) {
+            String response = given()
+                    .log().all()
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + variables.getToken())
+                    .delete(accountParam+userParam+"/"+accountPayload.getUserId())
+                    .then()
+                    .log().all()
+                    .statusCode(204)
+                    .extract().response().asString();
 
-        Assert.assertTrue(response.isEmpty());
+            Assert.assertTrue(response.isEmpty());
 
-        // Verify user can't be found after removal
+            // Verify user can't be found after removal
 
-        JsonPath jp = new JsonPath(getUser(401));
-        String message = jp.get("message");
-        Assert.assertEquals(message, "User not found!");
-
+            JsonPath jp = new JsonPath(getUser(401));
+            String message = jp.get("message");
+            Assert.assertEquals(message, "User not found!");
+        }
     }
-    @Ignore
+
+    public String getISBN() {
+        return isbn.getIsbn().get(new Random().nextInt(isbn.getIsbn().size()));
+    }
     @Test(priority = 10)
     public void createUser() {
         String response = given()
@@ -148,9 +152,9 @@ public class ApiTests {
         Assert.assertNull(books);
         Assert.assertFalse(userIsAuthorized());
     }
-    @Ignore
     @Test(priority = 20)
     public void createToken() {
+        createUser();
         AccountPayload body = new AccountPayload();
         body.setUserName(accountPayload.getUserName());
         body.setPassword(accountPayload.getPassword());
@@ -174,9 +178,10 @@ public class ApiTests {
         Assert.assertEquals(result, "User authorized successfully.");
     }
 
-    @Ignore
     @Test(priority = 30)
     public void getUserInfo() {
+        createUser();
+        createToken();
         JsonPath jp = new JsonPath(getUser(200));
         String userID = jp.get("userId");
         String username = jp.get("username");
@@ -197,8 +202,8 @@ public class ApiTests {
                 .extract().response().asString();
 
         JsonPath jp = new JsonPath(response);
-        String body = jp.get("books[0].isbn");
         int size = jp.get("books.size()");
+        String body = jp.get("books[0].isbn");
 
         Assert.assertFalse(body.isEmpty());
         Assert.assertTrue(size > 0);
@@ -212,6 +217,8 @@ public class ApiTests {
 
     @Test(priority = 50)
     public void getOneBook() {
+        getAllBooks();
+
         String bookID = isbn.getIsbn().get(new Random().nextInt(isbn.getIsbn().size()));
         String response = given()
                 .queryParam("ISBN", bookID)
@@ -244,6 +251,74 @@ public class ApiTests {
         Assert.assertFalse(description.isEmpty());
         Assert.assertFalse(website.isEmpty());
     }
+
+    @Test(priority = 60)
+    public void addBookToUser() {
+        createUser();
+        createToken();
+        getAllBooks();
+
+        BookstorePayload payload = new BookstorePayload();
+        Isbn bookID = new Isbn();
+        ArrayList list = new ArrayList<>();
+        bookID.setIsbn(isbn.getIsbn().get(new Random().nextInt(isbn.getIsbn().size())));
+        list.add(bookID);
+        payload.setUserId(accountPayload.getUserId());
+        payload.setCollectionOfIsbns(list);
+
+        String response = given()
+                .log().all()
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + variables.getToken())
+                .body(payload)
+                .when()
+                .post(bookstoreParam+multipleBooksParam)
+                .then()
+                .log().all()
+                .statusCode(201)
+                .extract().response().asString();
+    }
+
+    @Test(priority = 70)
+    public void addMultipleBooksToUser() {
+        createUser();
+        createToken();
+        getAllBooks();
+
+        BookstorePayload payload = new BookstorePayload();
+        Isbn bookID1 = new Isbn();
+        Isbn bookID2 = new Isbn();
+        ArrayList list = new ArrayList<>();
+        String book1 = getISBN();
+        String book2;
+        while(true) {
+            book2 = getISBN();
+            if (!book2.equals(book1)) {
+                break;
+            }
+        }
+        bookID1.setIsbn(book1);
+        list.add(bookID1);
+        bookID2.setIsbn(book2);
+        list.add(bookID2);
+        payload.setUserId(accountPayload.getUserId());
+        payload.setCollectionOfIsbns(list);
+
+        String response = given()
+                .log().all()
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + variables.getToken())
+                .body(payload)
+                .when()
+                .post(bookstoreParam+multipleBooksParam)
+                .then()
+                .log().all()
+                .statusCode(201)
+                .extract().response().asString();
+    }
+
+
+
 
 
 }
