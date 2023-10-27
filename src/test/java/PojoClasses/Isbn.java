@@ -17,4 +17,8 @@ public class Isbn {
     public void setIsbn(String isbn) {
         this.isbn = isbn;
     }
+
+    public String getOneIsbn() {
+        return isbn;
+    }
 }

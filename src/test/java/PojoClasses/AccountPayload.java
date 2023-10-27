@@ -44,4 +44,12 @@ public class AccountPayload {
         return payload;
     }
 
+    public String setRandomUsername() {
+        return "DragoTest " + faker.name().username();
+    }
+
+    public String setRandomPassword() {
+       return faker.regexify("([a-z]){2}([A-Z]){2}([0-9]){2}([@$!%*&]){2}([0-9a-zA-Z]){3}?");
+    }
+
 }
