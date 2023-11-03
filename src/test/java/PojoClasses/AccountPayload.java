@@ -52,4 +52,8 @@ public class AccountPayload {
        return faker.regexify("([a-z]){2}([A-Z]){2}([0-9]){2}([@$!%*&]){2}([0-9a-zA-Z]){3}?");
     }
 
+    public String setRandomUserId() {
+        return faker.regexify("([0-9a-z]){8}(-)([0-9a-z]){4}(-)(4)([0-9a-z]){3}(-)([0-9a-z]){4}(-)([0-9a-z]){12}");
+    }
+
 }

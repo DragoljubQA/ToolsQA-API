@@ -101,12 +101,10 @@ public class ApiTests {
 
     public String getUser(int expectCode) {
         return  given()
-                .log().all()
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + variables.getToken())
                 .get(accountParam+userParam+"/"+accountPayload.getUserId())
                 .then()
-                .log().all()
                 .statusCode(expectCode)
                 .extract().response().asString();
     }
@@ -114,12 +112,10 @@ public class ApiTests {
     public void removeUser() {
         if (accountPayload.getUserId() != null && variables.getToken() != null) {
             String response = given()
-                    .log().all()
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + variables.getToken())
                     .delete(accountParam+userParam+"/"+accountPayload.getUserId())
                     .then()
-                    .log().all()
                     .statusCode(204)
                     .extract().response().asString();
 
@@ -547,7 +543,7 @@ public class ApiTests {
     }
 
     @Test(priority = 150)
-    public void creatUserWithExistingUsernameButDifferentPassword() {
+    public void createUserWithExistingUsernameButDifferentPassword() {
         createUser();
         AccountPayload payload = new AccountPayload();
         payload.setUserName(accountPayload.getUserName());
@@ -566,6 +562,116 @@ public class ApiTests {
 
         JsonPath jp = new JsonPath(response);
         Assert.assertNull(jp.get("message"));
+    }
+
+    @Test(priority = 160)
+    public void cannotAddNonexistingISBN() {
+        createToken();
+
+        BookstorePayload payload = new BookstorePayload();
+        ArrayList list = new ArrayList<>();
+        bookID1.setIsbn(isbn.setRandomISBN());
+        list.add(bookID1);
+        payload.setUserId(accountPayload.getUserId());
+        payload.setCollectionOfIsbns(list);
+
+        String response = given()
+                .log().all()
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + variables.getToken())
+                .body(payload)
+                .when()
+                .post(bookstoreParam+multipleBooksParam)
+                .then()
+                .log().all()
+                .statusCode(400)
+                .extract().response().asString();
+
+        JsonPath jp = new JsonPath(response);
+        Assert.assertEquals(jp.get("message"), "ISBN supplied is not available in Books Collection!");
+
+    }
+
+    @Test(priority = 170)
+    public void cannotAddISBNToNonexistingUser() {
+        BookstorePayload payload = new BookstorePayload();
+        ArrayList list = new ArrayList<>();
+        bookID1.setIsbn(isbn.setRandomISBN());
+        list.add(bookID1);
+        payload.setUserId(accountPayload.setRandomUserId());
+        payload.setCollectionOfIsbns(list);
+
+        String response = given()
+                .log().all()
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + variables.getToken())
+                .body(payload)
+                .when()
+                .post(bookstoreParam+multipleBooksParam)
+                .then()
+                .log().all()
+                .statusCode(401)
+                .extract().response().asString();
+
+        JsonPath jp = new JsonPath(response);
+        Assert.assertEquals(jp.get("message"), "User Id not correct!");
+    }
+
+    @Test(priority = 180)
+    public void cannotRemoveISBNThatsNotInCollection() {
+        createToken();
+        getAllBooks();
+
+        BookstorePayload payload = new BookstorePayload();
+        payload.setUserId(accountPayload.getUserId());
+        payload.setIsbn(getISBN());
+
+        String response = given()
+                .log().all()
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + variables.getToken())
+                .body(payload)
+                .when()
+                .delete(bookstoreParam+singleBookParam)
+                .then()
+                .log().all()
+                .statusCode(400)
+                .extract().response().asString();
+
+        JsonPath jp = new JsonPath(response);
+        Assert.assertEquals(jp.get("message"), "ISBN supplied is not available in User's Collection!");
+
+    }
+
+    @Test(priority = 190)
+    public void cannotReplaceWithNonexistingISBN() {
+        addBookToUser();
+
+        String book1 = bookID1.getOneIsbn();
+
+        BookstorePayload payload = new BookstorePayload();
+        payload.setUserId(accountPayload.getUserId());
+        payload.setIsbn(isbn.setRandomISBN());
+
+        String response = given()
+                .log().all()
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + variables.getToken())
+                .body(payload)
+                .when()
+                .put(bookstoreParam+multipleBooksParam+"/"+book1)
+                .then()
+                .statusCode(400)
+                .log().all()
+                .extract().response().asString();
+
+        JsonPath jp = new JsonPath(response);
+        Assert.assertEquals(jp.get("message"), "ISBN supplied is not available in Books Collection!");
+
+        jp = new JsonPath(getUser(200));
+        Assert.assertEquals(jp.get("books[0].isbn"), book1);
+
+
     }
 
 }
